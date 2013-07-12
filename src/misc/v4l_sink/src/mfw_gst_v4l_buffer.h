@@ -42,7 +42,7 @@
 #include "mfw_gst_v4lsink.h"
 
 #define BUFFER_NEW_RETRY_MAX        500
-#define WAIT_ON_DQUEUE_FAIL_IN_MS   3000
+#define WAIT_ON_DQUEUE_FAIL_IN_MS   300
 
 
 

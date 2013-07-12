@@ -192,7 +192,7 @@ static guint mfw_gst_v4lsink_signals[SIGNAL_LAST] = { 0 };
 
 #define HW_DEINTERLACE
 #define QUEUE_SIZE_HIGH 5
-#define DEQUEUE_TIMES_IN_SHOW 1000
+#define DEQUEUE_TIMES_IN_SHOW 10000
 
 /*=============================================================================
                               LOCAL MACROS
@@ -1411,6 +1411,7 @@ mfw_gst_v4lsink_setcaps (GstBaseSink * basesink, GstCaps * vscapslist)
   gst_structure_get_fraction (structure, "framerate",
       &v4l_info->framerate_n, &v4l_info->framerate_d);
 
+#if 0
   {
     gint sfd_val = 0;
     gboolean ret;
@@ -1431,7 +1432,7 @@ mfw_gst_v4lsink_setcaps (GstBaseSink * basesink, GstCaps * vscapslist)
 
   }
   GST_INFO ("Set max lateness = %lld.", basesink->abidata.ABI.max_lateness);
-
+#endif
   mfw_gst_v4lsink_set_format (v4l_info, vscapslist);
 #ifdef USE_X11
   mfw_gst_v4lsink_got_xwindow_id (v4l_info);

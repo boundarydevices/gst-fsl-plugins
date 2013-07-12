@@ -3,10 +3,10 @@ AC_PREREQ(2.59)
 dnl initialize autoconf
 dnl releases only do -Wall, git and prerelease does -Werror too
 dnl use a three digit version number for releases, and four for git/prerelease
-AC_INIT(GStreamer i.MX Plug-ins, 3.0.5, http://www.freescale.com)
+AC_INIT(GStreamer i.MX Plug-ins, 3.0.7, http://www.freescale.com)
 
 dnl initialize automake
-AM_INIT_AUTOMAKE(gst-fsl-plugins, 3.0.5)
+AM_INIT_AUTOMAKE(gst-fsl-plugins, 3.0.7)
 
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -204,12 +204,16 @@ FIND_PARSER_SONAME(mkv,arm11)
 FIND_PARSER_SONAME(ogg,arm9)
 FIND_PARSER_SONAME(ogg,arm11)
 
+FIND_ACODEC_SONAME(aacplusd, arm9)
 FIND_ACODEC_SONAME(aacplusd, arm11)
 FIND_ACODEC_SONAME(aacplusd, arm12)
+FIND_ACODEC_SONAME(aacd, arm9)
 FIND_ACODEC_SONAME(aacd, arm11)
 FIND_ACODEC_SONAME(aacd, arm12)
+FIND_ACODEC_SONAME(mp3d, arm9)
 FIND_ACODEC_SONAME(mp3d, arm11)
 FIND_ACODEC_SONAME(mp3d, arm12)
+FIND_ACODEC_SONAME(wma10d, arm9)
 FIND_ACODEC_SONAME(wma10d, arm11)
 FIND_ACODEC_SONAME(wma10d, arm12)
 FIND_ACODEC_SONAME(ac3d, arm11)
@@ -304,6 +308,7 @@ src/audio/down_mix/src/Makefile
 src/audio/amr_dec/src/Makefile
 src/audio/amr_enc/src/Makefile
 src/audio/beep/src/Makefile
+src/audio/beep/src/beep_registry.arm9.cf
 src/audio/beep/src/beep_registry.arm11.cf
 src/audio/beep/src/beep_registry.arm12.cf
 src/video/h264_dec/src/Makefile

@@ -281,9 +281,6 @@ typedef struct
 #define INPUT_ENABLE_DEINTERLACE(itask)
 #define INPUT_DISABLE_DEINTERLACE(itask)
 
-
-
-
 #define OUTPUT_FORMAT(itask) ((itask)->output.fmt)
 #define OUTPUT_WIDTH(itask) ((itask)->output.width)
 #define OUTPUT_HEIGHT(itask) ((itask)->output.height)
@@ -294,24 +291,15 @@ typedef struct
 #define OUTPUT_ROTATION(itask) ((itask)->output.rot)
 #define OUTPUT_PADDR(itask) ((itask)->output.user_def_paddr[0])
 
-
-
 #endif
 
-#define ALIGNLEFT8(value)\
-        do{\
-            (value) = (((value)>>3)<<3);\
-        }while(0)
+#define ALIGNLEFT8(value) (((value)>>3)<<3)
+#define ALIGNRIGHT8(value) (((value+7)>>3)<<3)
 
-#define ALIGNRIGHT8(value)\
-        do{\
-            (value) = (((value+7)>>3)<<3);\
-        }while(0)
 
 /*=============================================================================
                 LOCAL TYPEDEFS (STRUCTURES, UNIONS, ENUMS)
 =============================================================================*/
-
 
 
 typedef enum

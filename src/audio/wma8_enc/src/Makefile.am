@@ -16,4 +16,4 @@ libmfw_gst_wma8enc_la_LIBADD = $(GST_LIBS) -l_wma_muxer_arm11_ELINUX -lgstbase-$
 libmfw_gst_wma8enc_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) $(FSL_MM_CORE_LIBS) 
 
 # headers we need but don't want installed
-noinst_HEADERS = mfw_gst_wma8enc.h tchar.h asf.h
+noinst_HEADERS = mfw_gst_wma8enc.h tchar.h

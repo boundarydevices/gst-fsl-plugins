@@ -345,9 +345,9 @@ _getVideoDeviceInfo (VideoDevice * vd)
     if (fd > 0) {
 
       VS_IOCTL (fd, FBIOGET_VSCREENINFO, error, &fb_var);
-      vd->resX = fb_var.xres;
-      vd->resY = fb_var.yres;
-      VS_MESSAGE ("MAX resolution %dx%d\n", vd->resX, vd->resY);
+      vd->resX = ALIGNLEFT8(fb_var.xres);
+      vd->resY = ALIGNLEFT8(fb_var.yres);
+      VS_MESSAGE ("MAX resolution %dx%d\n", fb_var.xres, fb_var.yres);
     error:
       close (fd);
     }
@@ -502,8 +502,8 @@ _initVideoDevice (VideoDevice * vd, int mode_idx)
 
     if ((mode_idx >= 0) && (mode_idx < vd->mode_num)) {
       vd->current_mode = mode_idx;
-      vd->resX = vd->modes[mode_idx].resx;
-      vd->resY = vd->modes[mode_idx].resy;
+      vd->resX = ALIGNLEFT8(vd->modes[mode_idx].resx);
+      vd->resY = ALIGNLEFT8(vd->modes[mode_idx].resy);
     } else {
       goto error;
     }
@@ -639,7 +639,7 @@ _clearBackground (VideoDevice * vd, VideoSurface * vs)
       CLEAR_SOURCE_WIDTH * CLEAR_SOURCE_HEIGHT * fmt2bit (CLEAR_SOURCE_FORMAT) /
       8);
 
-  if (dbuf.vaddr) {
+  if (dbuf.handle) {
     memset (dbuf.vaddr, 0,
         CLEAR_SOURCE_WIDTH * CLEAR_SOURCE_HEIGHT *
         fmt2bit (CLEAR_SOURCE_FORMAT) / 8);

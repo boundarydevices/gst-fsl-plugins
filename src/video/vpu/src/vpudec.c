@@ -108,6 +108,9 @@ enum
   SKIP_NONE = 0,
   SKIP_1OF4 = 0x3,
   SKIP_1OF8 = 0x7,
+  SKIP_1OF16 = 0xf,
+  SKIP_1OF32 = 0x1f,
+  SKIP_1OF64 = 0x3f,
   SKIP_BP = 0x100,
   SKIP_B = 0x200,
 };
@@ -137,7 +140,7 @@ static gboolean gst_vpudec_src_event (GstPad * pad, GstEvent * event);
 static const GstQueryType *gst_vpudec_query_types (GstPad * pad);
 static gboolean gst_vpudec_src_query (GstPad * pad, GstQuery * query);
 static GType gst_vpudec_get_output_format_type (void);
-
+static void vpudec_init_qos_ctrl(VpuDecQosCtl * qos);
 
 static gint g_fieldmap[] = {
   FIELD_NONE,
@@ -513,6 +516,7 @@ vpudec_core_init (GstVpuDec * vpudec)
   vpudec->ospec.ostructure = NULL;
   vpudec->use_new_tsm = FALSE;
   memset (&vpudec->vpu_stat, 0, sizeof (VpuDecStat));
+  vpudec_init_qos_ctrl(&vpudec->qosctl);
 
   CORE_API (VPU_DecGetVersionInfo, goto fail, core_ret, &version);
   CORE_API (VPU_DecGetWrapperVersionInfo, goto fail, core_ret, &w_version);
@@ -1383,6 +1387,35 @@ gst_vpudec_show_frame (GstVpuDec * vpudec, VpuDecFrame * frame,
   return ret;
 }
 
+
+static GstFlowReturn
+gst_vpudec_process_error(GstVpuDec * vpudec, VpuDecRetCode vpuretcode)
+{
+  GstFlowReturn ret = GST_FLOW_ERROR;
+  VpuDecRetCode core_ret;
+  VpuDecErrInfo err;
+
+  CORE_API (VPU_DecGetErrInfo, , core_ret, vpudec->context.handle, &err);
+
+  switch (err){
+    case VPU_DEC_ERR_NOT_SUPPORTED:
+      GST_ELEMENT_ERROR(vpudec, STREAM, FORMAT, ("format not support"), (NULL));
+      break;
+    case VPU_DEC_ERR_CORRUPT:
+      ret = GST_FLOW_UNEXPECTED;
+      GST_ELEMENT_ERROR(vpudec, STREAM, DECODE, ("corrupt stream detect"), (NULL));
+      break;
+    default:
+      GST_ELEMENT_ERROR(vpudec, STREAM, FAILED, ("unknown error detect"), (NULL));
+      break;
+  };
+
+bail:
+  return ret;
+
+}
+
+
 #define VPU_ASSIGN_OUTPUT(vpudec, frame, buffer)\
   do {\
     (vpudec)->output_size++; \
@@ -1624,11 +1657,18 @@ gst_vpudec_chain (GstPad * pad, GstBuffer * buffer)
 
   ret = GST_FLOW_OK;
 
+  if (buffer) {
+    gst_buffer_unref (buffer);
+  }
+
+  return ret;
 bail:
   {
     if (buffer) {
       gst_buffer_unref (buffer);
     }
+
+    ret = gst_vpudec_process_error(vpudec, core_ret);
     return ret;
   }
 }
@@ -1681,49 +1721,51 @@ bail:
 }
 
 
-#define VPU_DELAY_TIME_L1 10000
-#define VPU_DELAY_TIME_L2 200000
-#define VPU_DELAY_TIME_L3 2000000
-/*
- * Frame dropping strategy will be separated to 3 types.
- * Type 1: dropping B frames & dropping one frame in each eight frames. 
- * Type 2: dropping one frame in each four frames.
- * Type 3: dropping BP frames & dropping one frmaes in each four frames.
- * dropping one frame in each four/eight frames only do not render the dropped frames. 
- * It could be useful for long interval I frames case.
- */
-#define GST_VPU_QOS_EVENT_HANDLE(skipmode,diff) do {				            \
-  	int micro_diff = (diff)/1000;                                               \
-  	if ((micro_diff + VPU_DELAY_TIME_L1) > 0) {                                 \
-    	if (micro_diff>VPU_DELAY_TIME_L3) {                                     \
-        	skipmode = SKIP_B | SKIP_1OF4;								                    \
-            GST_INFO ("The time of decoding is %d ms away the system time,"     \
-                "drop B&P frames.", (micro_diff/1000));     				            \
-            break;                                                              \
-        }                                                                       \
-    	else if (micro_diff>VPU_DELAY_TIME_L2) {                                \
-        	skipmode = SKIP_B;								                    \
-            GST_INFO ("The time of decoding is %d ms away the system time,"       \
-                "Enable L2 strategy", (micro_diff/1000));     				        \
-            break;                                                              \
-        } else {                                                                \
-        	skipmode = SKIP_1OF8;								                    \
-            GST_INFO ("The time of decoding is %d ms away the system time,"        \
-                "drop B frames", (micro_diff/1000));     				            \
-            break;                                                              \
-        }                                                                       \
-    }                                                                           \
-    else {                                                                      \
-        skipmode = SKIP_NONE;                                                   \
-    }                                                                           \
-} while(0);
+static void
+vpudec_init_qos_ctrl(VpuDecQosCtl * qos)
+{
+  qos->cur_drop_level = 0;
+  qos->guard_ms = 5000;
+  qos->l1_ms = 2000000;
+  qos->l2_ms = 200000;
+  qos->l3_ms = 10000;
+  qos->l4_ms = 5000;
+}
 
+
+static guint
+vpudec_process_qos (GstVpuDec *vpudec, GstClockTimeDiff diff)
+{
+  guint level;
+  VpuDecQosCtl * q = &vpudec->qosctl;
+  gint micro_diff = (diff)/1000;
+  if ((micro_diff + q->guard_ms) > 0) {
+    if (micro_diff>q->l1_ms) {
+      level = SKIP_B | SKIP_1OF4;
+    } else if (micro_diff>q->l2_ms) {
+      level = SKIP_B;
+    } else if (micro_diff>q->l3_ms) {
+      level = SKIP_1OF16;
+    } else if (micro_diff>q->l4_ms) {
+      level = SKIP_1OF32;
+    } else {
+      level = SKIP_1OF64;
+    }
+  }
+  else {
+    level = 0;
+  }
+  if (level!=q->cur_drop_level){
+    GST_INFO ("change drop level from %x to %x", q->cur_drop_level, level);
+    q->cur_drop_level = level;
+  }
+  return level;
+}
 
 
 static gboolean
 gst_vpudec_src_event (GstPad * pad, GstEvent * event)
 {
-
   gboolean ret = TRUE;
 
   GstVpuDec *vpudec;
@@ -1732,34 +1774,30 @@ gst_vpudec_src_event (GstPad * pad, GstEvent * event)
   switch (GST_EVENT_TYPE (event)) {
     case GST_EVENT_QOS:
     {
-#if 1
+      GstClockTimeDiff diff;
+      GstClockTime timestamp;
+      gdouble proportion;
+      gint drop_policy;
+
+      gst_event_parse_qos (event, &proportion, &diff, &timestamp);
+
       if (vpudec->options.adaptive_drop) {
-        gdouble proportion;
-        GstClockTimeDiff diff;
-        GstClockTime timestamp;
-
-        gst_event_parse_qos (event, &proportion, &diff, &timestamp);
-
-        GST_VPU_QOS_EVENT_HANDLE (vpudec->drop_level, diff);
+        vpudec->drop_level = vpudec_process_qos(vpudec, diff);
         vpudec->drop_level &= vpudec->options.drop_level_mask;
-        /* Drop B strategy could cause playback not smooth, disable it */
-        {
-          gint drop_policy =
-              ((vpudec->drop_level & SKIP_BP) ? VPU_DEC_SKIPPB : ((vpudec->
-                      drop_level & SKIP_B) ? VPU_DEC_SKIPB : VPU_DEC_SKIPNONE));
-          if (drop_policy != vpudec->drop_policy) {
 
-            VpuDecRetCode core_ret;
-            GST_INFO ("change drop policy from %d to %d", vpudec->drop_policy,
-                drop_policy);
-            vpudec->drop_policy = drop_policy;
+        drop_policy =
+          ((vpudec->drop_level & SKIP_BP) ? VPU_DEC_SKIPPB : ((vpudec->
+              drop_level & SKIP_B) ? VPU_DEC_SKIPB : VPU_DEC_SKIPNONE));
 
-            gst_vpudec_setconfig (vpudec);
-          }
+        if (drop_policy != vpudec->drop_policy) {
+          VpuDecRetCode core_ret;
+          GST_INFO ("change vpu config %d to %d", vpudec->drop_policy,
+              drop_policy);
+         vpudec->drop_policy = drop_policy;
+         gst_vpudec_setconfig (vpudec);
         }
-
       }
-#endif
+
       ret = gst_pad_push_event (vpudec->sinkpad, event);
       break;
     }
@@ -1769,12 +1807,6 @@ gst_vpudec_src_event (GstPad * pad, GstEvent * event)
       break;
   }
   return ret;
-bail:
-  if (event) {
-    gst_event_unref (event);
-  }
-  return FALSE;
-
 }
 
 

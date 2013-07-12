@@ -73,15 +73,32 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libgstfsl_@GST_MAJORMINOR@_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am_libgstfsl_@GST_MAJORMINOR@_la_OBJECTS =  \
-	libgstfsl_@GST_MAJORMINOR@_la-gstbufmeta.lo \
-	libgstfsl_@GST_MAJORMINOR@_la-gstnext.lo \
-	libgstfsl_@GST_MAJORMINOR@_la-gstsutils.lo \
-	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_sconf.lo \
-	libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo \
-	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo \
-	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_vss_common.lo \
-	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_video_surface.lo
+am__libgstfsl_@GST_MAJORMINOR@_la_SOURCES_DIST =  \
+	gstbufmeta/gstbufmeta.c gstnext/gstnext.c \
+	gstsutils/gstsutils.c sconf/mfw_gst_sconf.c me/mfw_gst_ts.c \
+	hbuf_alloc/hwbuffer_allocator.c vss/mfw_gst_vss_common.c \
+	vss/mfw_gst_video_surface.c
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@am_libgstfsl_@GST_MAJORMINOR@_la_OBJECTS = libgstfsl_@GST_MAJORMINOR@_la-gstbufmeta.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@	libgstfsl_@GST_MAJORMINOR@_la-gstnext.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@	libgstfsl_@GST_MAJORMINOR@_la-gstsutils.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_sconf.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@am_libgstfsl_@GST_MAJORMINOR@_la_OBJECTS = libgstfsl_@GST_MAJORMINOR@_la-gstbufmeta.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-gstnext.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-gstsutils.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_sconf.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_vss_common.lo \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_video_surface.lo
+@PLATFORM_IS_MX5X_TRUE@am_libgstfsl_@GST_MAJORMINOR@_la_OBJECTS = libgstfsl_@GST_MAJORMINOR@_la-gstbufmeta.lo \
+@PLATFORM_IS_MX5X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-gstnext.lo \
+@PLATFORM_IS_MX5X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-gstsutils.lo \
+@PLATFORM_IS_MX5X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_sconf.lo \
+@PLATFORM_IS_MX5X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo \
+@PLATFORM_IS_MX5X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo \
+@PLATFORM_IS_MX5X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_vss_common.lo \
+@PLATFORM_IS_MX5X_TRUE@	libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_video_surface.lo
 libgstfsl_@GST_MAJORMINOR@_la_OBJECTS =  \
 	$(am_libgstfsl_@GST_MAJORMINOR@_la_OBJECTS)
 libgstfsl_@GST_MAJORMINOR@_la_LINK = $(LIBTOOL) --tag=CC \
@@ -102,7 +119,7 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libgstfsl_@GST_MAJORMINOR@_la_SOURCES)
-DIST_SOURCES = $(libgstfsl_@GST_MAJORMINOR@_la_SOURCES)
+DIST_SOURCES = $(am__libgstfsl_@GST_MAJORMINOR@_la_SOURCES_DIST)
 DATA = $(data_DATA)
 HEADERS = $(libgstfsl_@GST_MAJORMINOR@include_HEADERS)
 ETAGS = etags
@@ -192,8 +209,10 @@ VERSION = @VERSION@
 VPU_LIBS = @VPU_LIBS@
 aacd_arm11_SONAME = @aacd_arm11_SONAME@
 aacd_arm12_SONAME = @aacd_arm12_SONAME@
+aacd_arm9_SONAME = @aacd_arm9_SONAME@
 aacplusd_arm11_SONAME = @aacplusd_arm11_SONAME@
 aacplusd_arm12_SONAME = @aacplusd_arm12_SONAME@
+aacplusd_arm9_SONAME = @aacplusd_arm9_SONAME@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -245,6 +264,7 @@ mkv_arm11_SONAME = @mkv_arm11_SONAME@
 mkv_arm9_SONAME = @mkv_arm9_SONAME@
 mp3d_arm11_SONAME = @mp3d_arm11_SONAME@
 mp3d_arm12_SONAME = @mp3d_arm12_SONAME@
+mp3d_arm9_SONAME = @mp3d_arm9_SONAME@
 mp4_arm11_SONAME = @mp4_arm11_SONAME@
 mp4_arm9_SONAME = @mp4_arm9_SONAME@
 mpg2_arm11_SONAME = @mpg2_arm11_SONAME@
@@ -269,16 +289,34 @@ vorbisd_arm11_SONAME = @vorbisd_arm11_SONAME@
 vorbisd_arm12_SONAME = @vorbisd_arm12_SONAME@
 wma10d_arm11_SONAME = @wma10d_arm11_SONAME@
 wma10d_arm12_SONAME = @wma10d_arm12_SONAME@
+wma10d_arm9_SONAME = @wma10d_arm9_SONAME@
 lib_LTLIBRARIES = libgstfsl-@GST_MAJORMINOR@.la
-libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
-    gstbufmeta/gstbufmeta.c \
-    gstnext/gstnext.c       \
-    gstsutils/gstsutils.c   \
-    sconf/mfw_gst_sconf.c   \
-    hbuf_alloc/hwbuffer_allocator.c \
-    me/mfw_gst_ts.c         \
-    vss/mfw_gst_vss_common.c\
-    vss/mfw_gst_video_surface.c
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@    gstbufmeta/gstbufmeta.c \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@    gstnext/gstnext.c       \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@    gstsutils/gstsutils.c   \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@    sconf/mfw_gst_sconf.c   \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_FALSE@    me/mfw_gst_ts.c
+
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    gstbufmeta/gstbufmeta.c \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    gstnext/gstnext.c       \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    gstsutils/gstsutils.c   \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    sconf/mfw_gst_sconf.c   \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    hbuf_alloc/hwbuffer_allocator.c \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    me/mfw_gst_ts.c         \
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    vss/mfw_gst_vss_common.c\
+@PLATFORM_IS_MX5X_FALSE@@PLATFORM_IS_MX6X_TRUE@    vss/mfw_gst_video_surface.c
+
+@PLATFORM_IS_MX5X_TRUE@libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
+@PLATFORM_IS_MX5X_TRUE@    gstbufmeta/gstbufmeta.c \
+@PLATFORM_IS_MX5X_TRUE@    gstnext/gstnext.c       \
+@PLATFORM_IS_MX5X_TRUE@    gstsutils/gstsutils.c   \
+@PLATFORM_IS_MX5X_TRUE@    sconf/mfw_gst_sconf.c   \
+@PLATFORM_IS_MX5X_TRUE@    hbuf_alloc/hwbuffer_allocator.c \
+@PLATFORM_IS_MX5X_TRUE@    me/mfw_gst_ts.c         \
+@PLATFORM_IS_MX5X_TRUE@    vss/mfw_gst_vss_common.c\
+@PLATFORM_IS_MX5X_TRUE@    vss/mfw_gst_video_surface.c
 
 libgstfsl_@GST_MAJORMINOR@_la_CFLAGS = $(GST_BASE_CFLAGS) $(IPU_CFLAGS) -I../inc/common
 libgstfsl_@GST_MAJORMINOR@_la_LDFLAGS = -version-info @GSTMXLIBS_VERSION@
@@ -427,19 +465,19 @@ libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_sconf.lo: sconf/mfw_gst_sconf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_sconf.lo `test -f 'sconf/mfw_gst_sconf.c' || echo '$(srcdir)/'`sconf/mfw_gst_sconf.c
 
-libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo: hbuf_alloc/hwbuffer_allocator.c
-@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo -MD -MP -MF $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.Tpo -c -o libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo `test -f 'hbuf_alloc/hwbuffer_allocator.c' || echo '$(srcdir)/'`hbuf_alloc/hwbuffer_allocator.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.Tpo $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hbuf_alloc/hwbuffer_allocator.c' object='libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo `test -f 'hbuf_alloc/hwbuffer_allocator.c' || echo '$(srcdir)/'`hbuf_alloc/hwbuffer_allocator.c
-
 libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo: me/mfw_gst_ts.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo -MD -MP -MF $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.Tpo -c -o libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo `test -f 'me/mfw_gst_ts.c' || echo '$(srcdir)/'`me/mfw_gst_ts.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.Tpo $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='me/mfw_gst_ts.c' object='libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_ts.lo `test -f 'me/mfw_gst_ts.c' || echo '$(srcdir)/'`me/mfw_gst_ts.c
+
+libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo: hbuf_alloc/hwbuffer_allocator.c
+@am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo -MD -MP -MF $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.Tpo -c -o libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo `test -f 'hbuf_alloc/hwbuffer_allocator.c' || echo '$(srcdir)/'`hbuf_alloc/hwbuffer_allocator.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.Tpo $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hbuf_alloc/hwbuffer_allocator.c' object='libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libgstfsl_@GST_MAJORMINOR@_la-hwbuffer_allocator.lo `test -f 'hbuf_alloc/hwbuffer_allocator.c' || echo '$(srcdir)/'`hbuf_alloc/hwbuffer_allocator.c
 
 libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_vss_common.lo: vss/mfw_gst_vss_common.c
 @am__fastdepCC_TRUE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgstfsl_@GST_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_vss_common.lo -MD -MP -MF $(DEPDIR)/libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_vss_common.Tpo -c -o libgstfsl_@GST_MAJORMINOR@_la-mfw_gst_vss_common.lo `test -f 'vss/mfw_gst_vss_common.c' || echo '$(srcdir)/'`vss/mfw_gst_vss_common.c

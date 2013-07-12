@@ -71,6 +71,9 @@ struct _VpuEncMem
 {
   void *handle;
   void *parent;
+  void *paddr;
+  void *vaddr;
+  gint size;
   VpuEncMemFreeFunc freefunc;
   struct _VpuEncMem *next;
 };
@@ -134,16 +137,14 @@ typedef struct
 } VpuEncStat;
 
 
-typedef struct
-{
-  void *vaddr;
-  void *paddr;
-  gint size;
-} VpuEncBuf;
-
 typedef struct _GstVpuEnc GstVpuEnc;
 
 typedef struct _GstVpuEncClass GstVpuEncClass;
+
+typedef struct {
+  gint frame_size;
+  VpuEncMem * mems;
+} VpuEncFrameMemPool;
 
 struct _GstVpuEnc
 {
@@ -153,7 +154,9 @@ struct _GstVpuEnc
   gint std;
   gboolean framed;
   VpuEncContext context;
+
   VpuEncMem *mems;
+  VpuEncFrameMemPool framemem_pool;
 
   gint frame_num;
 
@@ -168,12 +171,13 @@ struct _GstVpuEnc
   GstClockTime frame_interval;
   gint mosaic_cnt;
   GMutex *lock;
+  GMutex * framemem_pool_lock;
   VpuEncStat vpu_stat;
   gboolean init;
   gboolean downstream_caps_set;
 
   gboolean force_copy;
-  VpuEncBuf obuf;
+  VpuEncMem * obuf;
   guint64 frame_cnt;
 
   GstBuffer *codec_data;

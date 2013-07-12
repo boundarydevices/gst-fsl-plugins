@@ -155,6 +155,10 @@ mfw_gst_v4lsink_buffer_finalize (MFWGstV4LSinkBuffer * v4lsink_buffer_released)
       }
       break;
 
+    case BUF_STATE_ILLEGAL:
+      /* DO NOTHING */
+      break;
+
     default:
       gst_buffer_ref (GST_BUFFER_CAST (v4lsink_buffer_released));
       GST_ERROR ("Buffer %d:%p is unref with error state %d!",
@@ -290,7 +294,7 @@ mfw_gst_v4l2_new_swbuffer (MFW_GST_V4LSINK_INFO_T * v4l_info)
   v4lsink_buffer =
       (MFWGstV4LSinkBuffer *) gst_mini_object_new (MFW_GST_TYPE_V4LSINK_BUFFER);
 
-  v4lsink_buffer->bufstate = BUF_STATE_FREE;
+  v4lsink_buffer->bufstate = BUF_STATE_ILLEGAL;
 
   /* try to allocate data buffer for swbuffer */
   switch (v4l_info->outformat) {
@@ -329,6 +333,7 @@ mfw_gst_v4l2_new_swbuffer (MFW_GST_V4LSINK_INFO_T * v4l_info)
       break;
     default:
       GST_ERROR ("Unsupport format:%x", v4l_info->outformat);
+      goto bail;
       break;
 
   };
@@ -337,8 +342,7 @@ mfw_gst_v4l2_new_swbuffer (MFW_GST_V4LSINK_INFO_T * v4l_info)
 
   if (pdata == NULL) {
     GST_ERROR ("Can not allocate data buffer for swbuffer!");
-    gst_buffer_unref (GST_BUFFER_CAST (v4lsink_buffer));
-    return NULL;
+    goto bail;
   }
 
   GST_BUFFER_DATA (v4lsink_buffer) = pdata;
@@ -349,6 +353,10 @@ mfw_gst_v4l2_new_swbuffer (MFW_GST_V4LSINK_INFO_T * v4l_info)
   v4lsink_buffer->bufstate = BUF_STATE_IDLE;
 
   return v4lsink_buffer;
+
+bail:
+  gst_buffer_unref (GST_BUFFER_CAST (v4lsink_buffer));
+  return NULL;
 }
 
 
@@ -465,6 +473,9 @@ mfw_gst_v4l2_new_hwbuffer (MFW_GST_V4LSINK_INFO_T * v4l_info)
 
   v4lsink_buffer =
       (MFWGstV4LSinkBuffer *) gst_mini_object_new (MFW_GST_TYPE_V4LSINK_BUFFER);
+
+  v4lsink_buffer->bufstate = BUF_STATE_ILLEGAL;
+
   memset (&v4lsink_buffer->v4l_buf, 0, sizeof (struct v4l2_buffer));
 
   v4lbuf = &v4lsink_buffer->v4l_buf;

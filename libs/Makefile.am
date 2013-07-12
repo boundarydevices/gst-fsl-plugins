@@ -1,5 +1,7 @@
 lib_LTLIBRARIES = libgstfsl-@GST_MAJORMINOR@.la
 
+
+if PLATFORM_IS_MX5X
 libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
     gstbufmeta/gstbufmeta.c \
     gstnext/gstnext.c       \
@@ -9,6 +11,29 @@ libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
     me/mfw_gst_ts.c         \
     vss/mfw_gst_vss_common.c\
     vss/mfw_gst_video_surface.c
+
+else
+if PLATFORM_IS_MX6X
+libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
+    gstbufmeta/gstbufmeta.c \
+    gstnext/gstnext.c       \
+    gstsutils/gstsutils.c   \
+    sconf/mfw_gst_sconf.c   \
+    hbuf_alloc/hwbuffer_allocator.c \
+    me/mfw_gst_ts.c         \
+    vss/mfw_gst_vss_common.c\
+    vss/mfw_gst_video_surface.c
+
+else
+libgstfsl_@GST_MAJORMINOR@_la_SOURCES = \
+    gstbufmeta/gstbufmeta.c \
+    gstnext/gstnext.c       \
+    gstsutils/gstsutils.c   \
+    sconf/mfw_gst_sconf.c   \
+    me/mfw_gst_ts.c
+endif
+endif
+
 
 libgstfsl_@GST_MAJORMINOR@_la_CFLAGS  = $(GST_BASE_CFLAGS) $(IPU_CFLAGS) -I../inc/common
 libgstfsl_@GST_MAJORMINOR@_la_LDFLAGS = -version-info @GSTMXLIBS_VERSION@

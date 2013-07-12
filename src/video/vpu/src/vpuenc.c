@@ -187,6 +187,7 @@ static gboolean gst_vpuenc_sink_event (GstPad * pad, GstEvent * event);
 static gboolean gst_vpuenc_src_event (GstPad * pad, GstEvent * event);
 static const GstQueryType *gst_vpuenc_query_types (GstPad * pad);
 static gboolean gst_vpuenc_src_query (GstPad * pad, GstQuery * query);
+static void vpuenc_free_memories (VpuEncMem * mems);
 
 
 
@@ -260,23 +261,28 @@ vpuenc_core_mem_free_normal_buffer (VpuEncMem * mem)
 
 
 static VpuEncMem *
-vpuenc_core_mem_alloc_normal_buffer (gint size, void * *vaddr)
+vpuenc_core_mem_alloc_normal_buffer (gint size)
 {
+  void * vaddr;
   VpuEncRetCode core_ret;
   VpuEncMem *mem = MM_MALLOC (sizeof (VpuEncMem));
 
-  *vaddr = MM_MALLOC (size);
+  vaddr = MM_MALLOC (size);
 
-  if ((mem == NULL) || (*vaddr == NULL)) {
+  if ((mem == NULL) || (vaddr == NULL)) {
     goto fail;
   }
 
   mem->freefunc = vpuenc_core_mem_free_normal_buffer;
-  mem->handle = *vaddr;
+  mem->handle = vaddr;
+  mem->size = size;
+  mem->vaddr = vaddr;
+  mem->paddr = NULL;
+  mem->parent = NULL;
   return mem;
 fail:
-  if (*vaddr) {
-    MM_FREE (*vaddr);
+  if (vaddr) {
+    MM_FREE (vaddr);
   }
   if (mem) {
     MM_FREE (mem);
@@ -303,7 +309,7 @@ vpuenc_core_mem_free_dma_buffer (VpuEncMem * mem)
 
 
 static VpuEncMem *
-vpuenc_core_mem_alloc_dma_buffer (gint size, void **paddr, void **vaddr)
+vpuenc_core_mem_alloc_dma_buffer (gint size)
 {
   VpuEncRetCode core_ret;
   VpuEncMem *mem = MM_MALLOC (sizeof (VpuEncMem));
@@ -314,15 +320,12 @@ vpuenc_core_mem_alloc_dma_buffer (gint size, void **paddr, void **vaddr)
   }
   vmem->nSize = size;
   CORE_API_UNLOCKED (VPU_EncGetMem, goto fail, core_ret, vmem);
-  if (paddr) {
-    *paddr = (void *) vmem->nPhyAddr;
-  }
-  if (vaddr) {
-    *vaddr = (void *) vmem->nVirtAddr;
-  }
+  mem->paddr = (void *) vmem->nPhyAddr;
+  mem->vaddr = (void *) vmem->nVirtAddr;
   MM_REGRES (vmem, RES_FILE_DEVICE);
   mem->freefunc = vpuenc_core_mem_free_dma_buffer;
   mem->handle = vmem;
+  mem->size = size;
   mem->parent = NULL;
   return mem;
 fail:
@@ -336,7 +339,13 @@ fail:
   return mem;
 }
 
-
+static void
+vpuenc_free_framemem_pool(GstVpuEnc * vpuenc)
+{
+  vpuenc_free_memories(vpuenc->framemem_pool.mems);
+  vpuenc->framemem_pool.mems = NULL;
+  vpuenc->framemem_pool.frame_size = 0;
+}
 
 
 static gboolean
@@ -351,17 +360,15 @@ vpuenc_prealloc_memories (GstVpuEnc * vpuenc, VpuMemInfo * mem)
       VpuEncMem *vblock;
       int size = block->nSize + block->nAlignment;
       if (block->MemType == VPU_MEM_VIRT) {
-        void *vaddr;
-        if (vblock = vpuenc_core_mem_alloc_normal_buffer (size, &vaddr)) {
-          block->pVirtAddr = (unsigned char *) Align (vaddr, block->nAlignment);
+        if (vblock = vpuenc_core_mem_alloc_normal_buffer (size)) {
+          block->pVirtAddr = (unsigned char *) Align (vblock->vaddr, block->nAlignment);
         } else {
           goto fail;
         }
       } else if (block->MemType == VPU_MEM_PHY) {
-        void *vaddr, *paddr;
-        if (vblock = vpuenc_core_mem_alloc_dma_buffer (size, &paddr, &vaddr)) {
-          block->pPhyAddr = (unsigned char *) Align (paddr, block->nAlignment);
-          block->pVirtAddr = (unsigned char *) Align (vaddr, block->nAlignment);
+        if (vblock = vpuenc_core_mem_alloc_dma_buffer (size)) {
+          block->pPhyAddr = (unsigned char *) Align (vblock->paddr, block->nAlignment);
+          block->pVirtAddr = (unsigned char *) Align (vblock->vaddr, block->nAlignment);
         } else {
           goto fail;
         }
@@ -381,9 +388,9 @@ fail:
 }
 
 static void
-vpuenc_free_memories (GstVpuEnc * vpuenc)
+vpuenc_free_memories (VpuEncMem * mems)
 {
-  VpuEncMem *mem = vpuenc->mems, *memnext;
+  VpuEncMem *mem = mems, *memnext;
 
   while (mem) {
     memnext = mem->next;
@@ -394,7 +401,6 @@ vpuenc_free_memories (GstVpuEnc * vpuenc)
     }
     mem = memnext;
   }
-  vpuenc->mems = NULL;
 }
 
 
@@ -443,7 +449,8 @@ vpuenc_core_init (GstVpuEnc * vpuenc)
   CORE_API (VPU_EncQueryMem, goto fail, core_ret, &vpuenc->context.meminfo);
 
   if (!vpuenc_prealloc_memories (vpuenc, &vpuenc->context.meminfo)) {
-    vpuenc_free_memories (vpuenc);
+    vpuenc_free_memories (vpuenc->mems);
+    vpuenc->mems = NULL;
     goto fail;
   }
 
@@ -473,7 +480,12 @@ vpuenc_core_deinit (GstVpuEnc * vpuenc)
     vpuenc->context.handle = 0;
   }
 
-  vpuenc_free_memories (vpuenc);
+  vpuenc_free_memories (vpuenc->mems);
+  vpuenc->mems = NULL;
+
+  g_mutex_lock(vpuenc->framemem_pool_lock);
+  vpuenc_free_framemem_pool(vpuenc);
+  g_mutex_unlock(vpuenc->framemem_pool_lock);
 
   GST_INFO ("stat:\n\tin  : %lld\n\tout : %lld\n\tshow: %lld",
       vpuenc->vpu_stat.in_cnt, vpuenc->vpu_stat.out_cnt,
@@ -561,53 +573,82 @@ gst_vpuenc_class_init (GstVpuEncClass * klass)
 
 
 static void
-gst_vpuenc_free_internal_frame (gpointer p)
+gst_vpuenc_free_internal_frame(gpointer p)
 {
   GstBufferMeta *meta = (GstBufferMeta *) p;
-  VpuEncMem *frameblock = (VpuEncMem *) meta->priv;
-  if (frameblock->parent) {
-    gst_object_unref (frameblock->parent);
+  VpuEncMem * mem = (VpuEncMem *) meta->priv;
+  GstVpuEnc * vpuenc = (GstVpuEnc *)(mem->parent);
+
+  g_mutex_lock(vpuenc->framemem_pool_lock);
+
+  if (mem->size==vpuenc->framemem_pool.frame_size){
+    mem->next = vpuenc->framemem_pool.mems;
+    vpuenc->framemem_pool.mems = mem;
+  }else{
+
+    if (mem->freefunc) {
+      mem->freefunc (mem);
+    }
+
   }
-  if (frameblock->freefunc) {
-    frameblock->freefunc (frameblock);
-  }
+  gst_object_unref(vpuenc);
   gst_buffer_meta_free (meta);
+  g_mutex_unlock(vpuenc->framemem_pool_lock);
 }
+
+
+
 
 static GstFlowReturn
 gst_vpuenc_alloc_buffer (GstPad * pad, guint64 offset, guint size,
     GstCaps * caps, GstBuffer ** buf)
 {
+  GstVpuEnc * vpuenc = (GstVpuEnc *)GST_PAD_PARENT (pad);
   GstFlowReturn ret = GST_FLOW_ERROR;
   GstBuffer *gstbuf;
-  void *paddr, *vaddr;
-  VpuEncMem *frameblock =
-      vpuenc_core_mem_alloc_dma_buffer (size, &paddr, &vaddr);
+  VpuEncMem * mem = NULL;
 
-  if (frameblock == NULL) {
-    goto fail;
+  g_mutex_lock(vpuenc->framemem_pool_lock);
+
+  if (size!=vpuenc->framemem_pool.frame_size){
+    vpuenc_free_framemem_pool(vpuenc);
+    vpuenc->framemem_pool.frame_size = size;
+  }else if (vpuenc->framemem_pool.mems) {
+    mem = vpuenc->framemem_pool.mems;
+    vpuenc->framemem_pool.mems = mem->next;
   }
+
   GstBufferMeta *bufmeta = gst_buffer_meta_new ();
   gstbuf = gst_buffer_new ();
 
+  if (mem==NULL)
+    mem = vpuenc_core_mem_alloc_dma_buffer (size);
+
+  if (mem == NULL) {
+    goto bail;
+  }
+
   GST_BUFFER_SIZE (gstbuf) = size;
-  GST_BUFFER_DATA (gstbuf) = vaddr;
+  GST_BUFFER_DATA (gstbuf) = mem->vaddr;
   GST_BUFFER_OFFSET (gstbuf) = offset;
   gst_buffer_set_caps (gstbuf, caps);
 
   gint index = G_N_ELEMENTS (gstbuf->_gst_reserved) - 1;
-  bufmeta->physical_data = paddr;
-  bufmeta->priv = frameblock;
+  bufmeta->physical_data = mem->paddr;
+  bufmeta->priv = mem;
   gstbuf->_gst_reserved[index] = bufmeta;
-  frameblock->parent = gst_object_ref (GST_PAD_PARENT (pad));
+  mem->parent = gst_object_ref (vpuenc);
 
   GST_BUFFER_MALLOCDATA (gstbuf) = (guint8 *) bufmeta;
   GST_BUFFER_FREE_FUNC (gstbuf) = gst_vpuenc_free_internal_frame;
   *buf = gstbuf;
   ret = GST_FLOW_OK;
-fail:
+
+bail:
+  g_mutex_unlock(vpuenc->framemem_pool_lock);
   return ret;
 }
+
 
 static void
 gst_vpuenc_init (GstVpuEnc * vpuenc, GstVpuEncClass * klass)
@@ -643,7 +684,7 @@ gst_vpuenc_init (GstVpuEnc * vpuenc, GstVpuEncClass * klass)
   vpuenc->context.openparam.sMirror = VPU_ENC_MIRDIR_NONE;
 
   vpuenc->lock = g_mutex_new ();
-
+  vpuenc->framemem_pool_lock = g_mutex_new ();
   VPU_EncLoad ();
 }
 
@@ -696,7 +737,9 @@ gst_vpuenc_core_create_and_register_frames (GstVpuEnc * vpuenc, gint num)
   if (ispec->frame_extra_size) {
     if ((mvblock =
             vpuenc_core_mem_alloc_dma_buffer (num *
-                ispec->frame_extra_size, &mv_paddr, &mv_vaddr))) {
+                ispec->frame_extra_size))) {
+      mv_paddr = mvblock->paddr;
+      mv_vaddr = mvblock->vaddr;
       ATTACH_MEM2VPUDEC (vpuenc, mvblock);
     } else {
       goto fail;
@@ -711,14 +754,14 @@ gst_vpuenc_core_create_and_register_frames (GstVpuEnc * vpuenc, gint num)
     int size =
         ispec->frame_size + vpuenc->context.initinfo.nAddressAlignment - 1;
     frameblock =
-        vpuenc_core_mem_alloc_dma_buffer (size, &frame_paddr, &frame_vaddr);
+        vpuenc_core_mem_alloc_dma_buffer (size);
 
     if (frameblock) {
       frame_paddr =
-          (void *) Align (frame_paddr,
+          (void *) Align (frameblock->paddr,
           vpuenc->context.initinfo.nAddressAlignment);
       frame_vaddr =
-          (void *) Align (frame_vaddr,
+          (void *) Align (frameblock->vaddr,
           vpuenc->context.initinfo.nAddressAlignment);
       ATTACH_MEM2VPUDEC (vpuenc, frameblock);
       vpucore_frame = &vpuframebuffers[vpuenc->frame_num];
@@ -773,6 +816,7 @@ gst_vpuenc_finalize (GObject * object)
   VPU_EncUnLoad ();
 
   g_mutex_free (vpuenc->lock);
+  g_mutex_free (vpuenc->framemem_pool_lock);
 
   G_OBJECT_CLASS (parent_class)->finalize (object);
 }
@@ -1133,13 +1177,10 @@ gst_vpuenc_chain (GstPad * pad, GstBuffer * buffer)
       goto bail;
     }
 
-    VpuEncMem *bitstreamblock;
-    vpuenc->obuf.size = DEFAULT_BITSTREAM_BUFFER_LENGTH;
-    if ((bitstreamblock = vpuenc_core_mem_alloc_dma_buffer (vpuenc->obuf.size,
-                &vpuenc->obuf.paddr, &vpuenc->obuf.vaddr)) == NULL) {
+    if ((vpuenc->obuf = vpuenc_core_mem_alloc_dma_buffer (DEFAULT_BITSTREAM_BUFFER_LENGTH)) == NULL) {
       goto bail;
     }
-    ATTACH_MEM2VPUDEC (vpuenc, bitstreamblock);
+    ATTACH_MEM2VPUDEC (vpuenc, vpuenc->obuf);
 
     setTSManagerFrameRate (vpuenc->tsm, vpuenc->options.framerate_nu,
         vpuenc->options.framerate_de);
@@ -1171,13 +1212,12 @@ gst_vpuenc_chain (GstPad * pad, GstBuffer * buffer)
       gint size = vpuenc->ispec.pad_frame_size + vpuenc->ispec.buffer_align - 1;
       GST_INFO ("Need memcpy input buffer, performance maybe drop");
       if ((frameblock =
-              vpuenc_core_mem_alloc_dma_buffer (vpuenc->ispec.pad_frame_size,
-                  &paddr, &vaddr)) == NULL) {
+              vpuenc_core_mem_alloc_dma_buffer (vpuenc->ispec.pad_frame_size)) == NULL) {
         GST_ERROR ("Can not create dmaable buffer for input copy");
         goto bail;
       }
-      paddr = (void *) Align (paddr, vpuenc->ispec.buffer_align);
-      vaddr = (void *) Align (vaddr, vpuenc->ispec.buffer_align);
+      paddr = (void *) Align (frameblock->paddr, vpuenc->ispec.buffer_align);
+      vaddr = (void *) Align (frameblock->vaddr, vpuenc->ispec.buffer_align);
       gst_vpuenc_copy_frame (vpuenc, buffer, vaddr);
     }
 
@@ -1188,9 +1228,9 @@ gst_vpuenc_chain (GstPad * pad, GstBuffer * buffer)
 
     do {
       vpuenc->context.params.eOutRetCode = 0;
-      vpuenc->context.params.nInPhyOutput = (unsigned int) vpuenc->obuf.paddr;
-      vpuenc->context.params.nInVirtOutput = (unsigned int) vpuenc->obuf.vaddr;
-      vpuenc->context.params.nInOutputBufLen = vpuenc->obuf.size;
+      vpuenc->context.params.nInPhyOutput = (unsigned int) vpuenc->obuf->paddr;
+      vpuenc->context.params.nInVirtOutput = (unsigned int) vpuenc->obuf->vaddr;
+      vpuenc->context.params.nInOutputBufLen = vpuenc->obuf->size;
       CORE_API (VPU_EncEncodeFrame, {
             if (core_ret == VPU_DEC_RET_FAILURE_TIMEOUT)
           CORE_API (VPU_EncReset,, core_ret, vpuenc->context.handle);
@@ -1203,7 +1243,7 @@ gst_vpuenc_chain (GstPad * pad, GstBuffer * buffer)
           vpuenc->codec_data =
               gst_buffer_new_and_alloc (vpuenc->context.params.nOutOutputSize);
           memcpy (GST_BUFFER_DATA (vpuenc->codec_data),
-              (void *) (vpuenc->obuf.vaddr),
+              (void *) (vpuenc->obuf->vaddr),
               vpuenc->context.params.nOutOutputSize);
           GST_INFO ("got codec data %d bytes %" GST_PTR_FORMAT,
               vpuenc->context.params.nOutOutputSize, vpuenc->codec_data);
@@ -1211,7 +1251,7 @@ gst_vpuenc_chain (GstPad * pad, GstBuffer * buffer)
       } else if (vpuenc->context.params.eOutRetCode & VPU_ENC_OUTPUT_DIS) {
         GstBuffer *gstbuf;
         MFW_WEAK_ASSERT (vpuenc->context.params.nOutOutputSize <=
-            vpuenc->obuf.size);
+            vpuenc->obuf->size);
         GST_LOG ("got compressed frame %d bytes",
             vpuenc->context.params.nOutOutputSize);
         if ((ret =
@@ -1222,7 +1262,7 @@ gst_vpuenc_chain (GstPad * pad, GstBuffer * buffer)
           goto bail;
         }
         /* FIX ME : currently vpu wrapper still need copy since 6q does not dynamic output buffer */
-        memcpy (GST_BUFFER_DATA (gstbuf), (void *) (vpuenc->obuf.vaddr),
+        memcpy (GST_BUFFER_DATA (gstbuf), (void *) (vpuenc->obuf->vaddr),
             vpuenc->context.params.nOutOutputSize);
         vpuenc->vpu_stat.out_cnt++;
         ret = gst_vpuenc_push_buffer (vpuenc, gstbuf);

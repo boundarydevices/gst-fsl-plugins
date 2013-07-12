@@ -35,6 +35,6 @@ libmfw_gst_beep_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) $(FSL_MM_CORE_LIBS)
 
 # headers we need but don't want installed
 noinst_HEADERS =  beepregistry.h beepdec.h
-data_DATA = beep_registry.arm11.cf beep_registry.arm12.cf
+data_DATA = beep_registry.arm9.cf beep_registry.arm11.cf beep_registry.arm12.cf
 
-EXTRA_DIST = beep_registry.arm11.cf.in beep_registry.arm12.cf.in
+EXTRA_DIST = beep_registry.arm9.cf.in beep_registry.arm11.cf.in beep_registry.arm12.cf.in

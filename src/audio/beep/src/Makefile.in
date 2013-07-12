@@ -39,13 +39,15 @@ host_triplet = @host@
 subdir = src/audio/beep/src
 DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/beep_registry.arm11.cf.in \
-	$(srcdir)/beep_registry.arm12.cf.in
+	$(srcdir)/beep_registry.arm12.cf.in \
+	$(srcdir)/beep_registry.arm9.cf.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
-CONFIG_CLEAN_FILES = beep_registry.arm11.cf beep_registry.arm12.cf
+CONFIG_CLEAN_FILES = beep_registry.arm9.cf beep_registry.arm11.cf \
+	beep_registry.arm12.cf
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -201,8 +203,10 @@ VERSION = @VERSION@
 VPU_LIBS = @VPU_LIBS@
 aacd_arm11_SONAME = @aacd_arm11_SONAME@
 aacd_arm12_SONAME = @aacd_arm12_SONAME@
+aacd_arm9_SONAME = @aacd_arm9_SONAME@
 aacplusd_arm11_SONAME = @aacplusd_arm11_SONAME@
 aacplusd_arm12_SONAME = @aacplusd_arm12_SONAME@
+aacplusd_arm9_SONAME = @aacplusd_arm9_SONAME@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -254,6 +258,7 @@ mkv_arm11_SONAME = @mkv_arm11_SONAME@
 mkv_arm9_SONAME = @mkv_arm9_SONAME@
 mp3d_arm11_SONAME = @mp3d_arm11_SONAME@
 mp3d_arm12_SONAME = @mp3d_arm12_SONAME@
+mp3d_arm9_SONAME = @mp3d_arm9_SONAME@
 mp4_arm11_SONAME = @mp4_arm11_SONAME@
 mp4_arm9_SONAME = @mp4_arm9_SONAME@
 mpg2_arm11_SONAME = @mpg2_arm11_SONAME@
@@ -278,6 +283,7 @@ vorbisd_arm11_SONAME = @vorbisd_arm11_SONAME@
 vorbisd_arm12_SONAME = @vorbisd_arm12_SONAME@
 wma10d_arm11_SONAME = @wma10d_arm11_SONAME@
 wma10d_arm12_SONAME = @wma10d_arm12_SONAME@
+wma10d_arm9_SONAME = @wma10d_arm9_SONAME@
 
 # plugindir is set in configure
 plugin_LTLIBRARIES = libmfw_gst_beep.la
@@ -301,8 +307,8 @@ libmfw_gst_beep_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) $(FSL_MM_CORE_LIBS)
 
 # headers we need but don't want installed
 noinst_HEADERS = beepregistry.h beepdec.h
-data_DATA = beep_registry.arm11.cf beep_registry.arm12.cf
-EXTRA_DIST = beep_registry.arm11.cf.in beep_registry.arm12.cf.in
+data_DATA = beep_registry.arm9.cf beep_registry.arm11.cf beep_registry.arm12.cf
+EXTRA_DIST = beep_registry.arm9.cf.in beep_registry.arm11.cf.in beep_registry.arm12.cf.in
 all: all-am
 
 .SUFFIXES:
@@ -337,6 +343,8 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+beep_registry.arm9.cf: $(top_builddir)/config.status $(srcdir)/beep_registry.arm9.cf.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 beep_registry.arm11.cf: $(top_builddir)/config.status $(srcdir)/beep_registry.arm11.cf.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 beep_registry.arm12.cf: $(top_builddir)/config.status $(srcdir)/beep_registry.arm12.cf.in

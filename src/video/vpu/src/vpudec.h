@@ -96,6 +96,19 @@ typedef struct _VpuDecFrame
   gint age;
 } VpuDecFrame;
 
+
+typedef struct
+{
+  gint delay_cnt;
+  gint delay_threshold;
+  gint guard_ms;
+  gint l1_ms;
+  gint l2_ms;
+  gint l3_ms;
+  gint l4_ms;
+  guint cur_drop_level;
+} VpuDecQosCtl;
+
 typedef struct
 {
   gint bufferplus;
@@ -204,6 +217,8 @@ struct _GstVpuDec
   gint64 predict_ts;
 
   VpuDecProfileCount profile_count;
+
+  VpuDecQosCtl qosctl;
 };
 
 struct _GstVpuDecClass

@@ -81,13 +81,11 @@ struct v4l2_mxc_offset
 
 #include "mfw_gst_utils.h"
 
-#if (defined(_MX6))
 #define fourcc(a, b, c, d)\
    (((guint32)(a)<<0)|((guint32)(b)<<8)|((guint32)(c)<<16)|((guint32)(d)<<24))
 #define IPU_PIX_FMT_TILED_NV12   fourcc ('T','N','V','P')
 #define IPU_PIX_FMT_TILED_NV12F  fourcc ('T','N','V','F')
 #define IPU_PIX_FMT_YUV444P      fourcc ('4','4','4','P')
-#endif
 
 
 /*=============================================================================

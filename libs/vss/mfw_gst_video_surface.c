@@ -317,20 +317,20 @@ _initVSIPUTask (VideoSurface * surf)
     if (surf->outside & VS_LEFT_OUT) {
       xx[0] =
           (DEVICE_LEFT_EDGE - origrect->left) * x_len / RECT_WIDTH (origrect);
-      ALIGNLEFT8 (xx[0]);
+      xx[0] = ALIGNLEFT8 (xx[0]);
     }
     if (surf->outside & VS_RIGHT_OUT) {
       xx[1] = (origrect->right - vd->resX) * x_len / RECT_WIDTH (origrect);
-      ALIGNLEFT8 (xx[1]);
+      xx[1] = ALIGNLEFT8 (xx[1]);
     }
     if (surf->outside & VS_TOP_OUT) {
       xx[2] =
           (DEVICE_TOP_EDGE - origrect->top) * y_len / RECT_HEIGHT (origrect);
-      ALIGNLEFT8 (xx[2]);
+      xx[2] = ALIGNLEFT8 (xx[2]);
     }
     if (surf->outside & VS_BOTTOM_OUT) {
       xx[3] = (origrect->bottom - vd->resY) * y_len / RECT_HEIGHT (origrect);
-      ALIGNLEFT8 (xx[3]);
+      xx[3] = ALIGNLEFT8 (xx[3]);
     }
 
     if (surf->desfmt.rot <= ROTATION_180_CLOCKWISE) {
@@ -438,10 +438,10 @@ _adjustDestRect (Rect * rect, VideoDevice * vd)
     rect->bottom = vd->resY;
   }
 
-  ALIGNRIGHT8 (rect->left);
-  ALIGNRIGHT8 (rect->top);
-  ALIGNLEFT8 (rect->right);
-  ALIGNLEFT8 (rect->bottom);
+  rect->left = ALIGNRIGHT8 (rect->left);
+  rect->top = ALIGNRIGHT8 (rect->top);
+  rect->right = ALIGNLEFT8 (rect->right);
+  rect->bottom = ALIGNLEFT8 (rect->bottom);
 
   //VS_MESSAGE("adjust win"WIN_FMT"\n", WIN_ARGS(rect));
 
@@ -625,10 +625,10 @@ _checkSource (SourceFmt * src)
 
   rect = &src->croprect.win;
 
-  ALIGNRIGHT8 (rect->left);
-  ALIGNRIGHT8 (rect->top);
-  ALIGNLEFT8 (rect->right);
-  ALIGNLEFT8 (rect->bottom);
+  rect->left = ALIGNRIGHT8 (rect->left);
+  rect->top = ALIGNRIGHT8 (rect->top);
+  rect->right = ALIGNLEFT8 (rect->right);
+  rect->bottom = ALIGNLEFT8 (rect->bottom);
 
   return 0;
 }
